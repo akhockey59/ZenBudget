@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FixedExpenseItem, FixedExpenseCategory } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleGenAI } from "@google/genai";
 
 interface FixedExpensesProps {
   monthKey: string;
@@ -15,6 +16,10 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ monthKey, items, o
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<FixedExpenseCategory>('Grocery');
   const [note, setNote] = useState('');
+  
+  // Scanning State
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categories: FixedExpenseCategory[] = ['Grocery', 'Travel', 'Bills', 'Rent', 'Other'];
 
@@ -33,10 +38,92 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ monthKey, items, o
     setIsAdding(false);
   };
 
+  const handleScanClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setIsAdding(true); // Open the form to show results
+    setNote("Analyzing bill...");
+
+    try {
+      if (!process.env.API_KEY) {
+        throw new Error("API Key missing");
+      }
+
+      // 1. Convert to Base64
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+             const result = reader.result as string;
+             // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+             const base64 = result.split(',')[1];
+             resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+      });
+
+      // 2. Call Gemini
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `
+        Analyze this image of a bill or receipt. 
+        Extract the following:
+        1. The TOTAL amount (find the final grand total).
+        2. The most likely category from this list: [Grocery, Travel, Bills, Rent, Other].
+        3. A very short note (e.g., vendor name like "Starbucks" or "DMart").
+        
+        Return ONLY a JSON object like this, do not add markdown formatting:
+        { "amount": 1250, "category": "Grocery", "note": "DMart" }
+      `;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: {
+          parts: [
+            { inlineData: { mimeType: file.type, data: base64Data } },
+            { text: prompt }
+          ]
+        }
+      });
+
+      // 3. Parse Response
+      const text = response.text || "{}";
+      // Clean up markdown if present (```json ... ```)
+      const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const result = JSON.parse(jsonStr);
+
+      if (result.amount) setAmount(String(result.amount));
+      if (result.category && categories.includes(result.category)) setCategory(result.category);
+      if (result.note) setNote(result.note);
+
+    } catch (err) {
+      console.error("Scan failed", err);
+      setNote("Scan failed. Please enter manually.");
+    } finally {
+      setIsScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const totalFixed = items.reduce((acc, item) => acc + item.amount, 0);
 
   return (
     <div className="bg-surface rounded-2xl border border-border overflow-hidden shadow-soft mt-8 p-6">
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        capture="environment" // Prefers rear camera on mobile
+        onChange={handleFileChange}
+      />
+
       <div className="flex justify-between items-center mb-6">
         <div>
            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
@@ -102,9 +189,16 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ monthKey, items, o
         <motion.form 
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="bg-zinc-100 dark:bg-zinc-800/50 p-4 rounded-xl border border-border"
+          className="bg-zinc-100 dark:bg-zinc-800/50 p-4 rounded-xl border border-border relative overflow-hidden"
           onSubmit={handleSubmit}
         >
+           {isScanning && (
+               <div className="absolute inset-0 bg-surface/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+                  <p className="text-xs font-medium text-primary animate-pulse">Reading Receipt...</p>
+               </div>
+           )}
+
            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               <div className="col-span-1">
                  <label className="text-[10px] text-muted font-bold uppercase">Category</label>
@@ -155,13 +249,22 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ monthKey, items, o
            </div>
         </motion.form>
       ) : (
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="w-full py-3 border border-dashed border-border rounded-xl text-sm font-medium text-muted hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-        >
-           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-           Add Grocery / Travel / Other
-        </button>
+        <div className="flex gap-3">
+            <button 
+            onClick={() => setIsAdding(true)}
+            className="flex-1 py-3 border border-dashed border-border rounded-xl text-sm font-medium text-muted hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Add Manual Entry
+            </button>
+            <button 
+            onClick={handleScanClick}
+            className="flex-1 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-sm font-medium shadow-soft hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="8" x="7" y="8" rx="1"/></svg>
+            Scan Bill / Receipt
+            </button>
+        </div>
       )}
     </div>
   );
