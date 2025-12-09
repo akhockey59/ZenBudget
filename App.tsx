@@ -112,12 +112,24 @@ const App: React.FC = () => {
   const handleUpdateDefaultBudget = (val: number) => {
     persistChanges({ ...appState, defaultMonthlyBudget: val });
   };
+  
+  const handleUpdateDefaultFixedBudget = (val: number) => {
+    persistChanges({ ...appState, defaultFixedBudget: val });
+  };
 
   const handleUpdateMonthBudget = (y: number, m: number, val: number) => {
     const key = `${y}-${String(m).padStart(2, '0')}`;
     persistChanges({
       ...appState,
       customBudgets: { ...appState.customBudgets, [key]: val }
+    });
+  };
+
+  const handleUpdateFixedBudget = (y: number, m: number, val: number) => {
+    const key = `${y}-${String(m).padStart(2, '0')}`;
+    persistChanges({
+        ...appState,
+        customFixedBudgets: { ...appState.customFixedBudgets, [key]: val }
     });
   };
 
@@ -192,6 +204,7 @@ const App: React.FC = () => {
 
   const currentMonthKey = `${year}-${String(month).padStart(2, '0')}`;
   const currentMonthlyBudget = appState.customBudgets[currentMonthKey] ?? appState.defaultMonthlyBudget;
+  const currentFixedBudget = appState.customFixedBudgets[currentMonthKey] ?? appState.defaultFixedBudget;
   const currentFixedExpenses = appState.monthlyFixedExpenses[currentMonthKey] || [];
 
   return (
@@ -231,10 +244,12 @@ const App: React.FC = () => {
             year={year} 
             month={month} 
             monthlyBudget={currentMonthlyBudget}
+            fixedBudget={currentFixedBudget}
             data={calculatedData}
             fixedExpenses={currentFixedExpenses}
             onUpdateExpense={handleUpdateExpense}
             onUpdateBudget={(val) => handleUpdateMonthBudget(year, month, val)}
+            onUpdateFixedBudget={(val) => handleUpdateFixedBudget(year, month, val)}
             onNextMonth={handleNextMonth}
             onPrevMonth={handlePrevMonth}
             onAddFixedExpense={handleAddFixedExpense}
@@ -247,6 +262,7 @@ const App: React.FC = () => {
             state={appState}
             year={year}
             onUpdateDefaultBudget={handleUpdateDefaultBudget}
+            onUpdateDefaultFixedBudget={handleUpdateDefaultFixedBudget}
             onUpdateMonthBudget={handleUpdateMonthBudget}
             onUpdateTheme={handleUpdateTheme}
             onToggleDarkMode={handleToggleDarkMode}
