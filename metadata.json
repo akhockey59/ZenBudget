@@ -1,5 +1,7 @@
 {
   "name": "ZenBudget Tracker",
   "description": "A comprehensive personal expense tracker with daily carry-forward logic, yearly dashboards, and AI-powered insights.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
