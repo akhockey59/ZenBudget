@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppState, ThemeColor } from '../types';
 import { exportToCSV } from '../services/storage';
@@ -7,6 +8,7 @@ import { auth } from '../services/firebase';
 interface SettingsProps {
   state: AppState;
   onUpdateDefaultBudget: (val: number) => void;
+  onUpdateDefaultFixedBudget: (val: number) => void; // New prop
   onUpdateMonthBudget: (year: number, month: number, val: number) => void;
   onUpdateTheme: (theme: ThemeColor) => void;
   onToggleDarkMode: (isDark: boolean) => void;
@@ -14,9 +16,10 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ 
-  state, onUpdateDefaultBudget, onUpdateMonthBudget, onUpdateTheme, onToggleDarkMode, year 
+  state, onUpdateDefaultBudget, onUpdateDefaultFixedBudget, onUpdateMonthBudget, onUpdateTheme, onToggleDarkMode, year 
 }) => {
   const [localDefault, setLocalDefault] = useState(state.defaultMonthlyBudget);
+  const [localFixedDefault, setLocalFixedDefault] = useState(state.defaultFixedBudget);
   
   const user = auth.currentUser;
 
@@ -90,28 +93,55 @@ export const Settings: React.FC<SettingsProps> = ({
       </Card3D>
 
       <Card3D className="bg-surface border-border" noHover>
-        <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
-          <div>
-             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-1">Default Monthly Budget</h3>
-             <p className="text-muted text-xs">This amount applies to all months unless overridden.</p>
-          </div>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <div className="relative w-full">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">₹</span>
-                <input 
-                  type="number" 
-                  value={localDefault}
-                  onChange={(e) => setLocalDefault(Number(e.target.value))}
-                  className="w-full sm:w-40 bg-zinc-100 dark:bg-zinc-900 border border-border rounded-lg pl-7 pr-3 py-2 text-zinc-900 dark:text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-                />
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Budget Limits</h3>
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
+            <div>
+                <h3 className="text-sm font-medium text-zinc-900 dark:text-white mb-1">Default Monthly Budget (Daily)</h3>
+                <p className="text-muted text-xs">For food, movies, commute. Carries over.</p>
             </div>
-            <button 
-              onClick={() => onUpdateDefaultBudget(localDefault)}
-              className="bg-primary hover:bg-primaryHover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              Save
-            </button>
-          </div>
+            <div className="flex gap-3 w-full sm:w-auto">
+                <div className="relative w-full">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">₹</span>
+                    <input 
+                    type="number" 
+                    value={localDefault}
+                    onChange={(e) => setLocalDefault(Number(e.target.value))}
+                    className="w-full sm:w-32 bg-zinc-100 dark:bg-zinc-900 border border-border rounded-lg pl-7 pr-3 py-2 text-zinc-900 dark:text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                    />
+                </div>
+                <button 
+                onClick={() => onUpdateDefaultBudget(localDefault)}
+                className="bg-primary hover:bg-primaryHover text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                >
+                Save
+                </button>
+            </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between border-t border-border pt-6">
+                <div>
+                    <h3 className="text-sm font-medium text-zinc-900 dark:text-white mb-1">Default Fixed Limit (Extra)</h3>
+                    <p className="text-muted text-xs">For Rent, Grocery, Travel. Does not carry over.</p>
+                </div>
+                <div className="flex gap-3 w-full sm:w-auto">
+                    <div className="relative w-full">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">₹</span>
+                        <input 
+                        type="number" 
+                        value={localFixedDefault}
+                        onChange={(e) => setLocalFixedDefault(Number(e.target.value))}
+                        className="w-full sm:w-32 bg-zinc-100 dark:bg-zinc-900 border border-border rounded-lg pl-7 pr-3 py-2 text-zinc-900 dark:text-white text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all"
+                        />
+                    </div>
+                    <button 
+                        onClick={() => onUpdateDefaultFixedBudget(localFixedDefault)}
+                        className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white border border-border px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
         </div>
       </Card3D>
 
