@@ -19,6 +19,7 @@ export interface DayCalculation {
   remainingBalance: number;
   note?: string;
   startBalance: number;
+  dailyLimit: number; // New field: (Budget + CarryOver) / DaysInMonth
 }
 
 export interface MonthlySummary {
@@ -49,8 +50,10 @@ export interface AppState {
   expenses: Record<string, number>; // date -> amount
   notes: Record<string, string>; // date -> note
   customBudgets: Record<string, number>; // "YYYY-MM" -> monthlyAmount
+  customFixedBudgets: Record<string, number>; // "YYYY-MM" -> monthlyFixedLimit
   monthlyFixedExpenses: Record<string, FixedExpenseItem[]>; // "YYYY-MM" -> List of fixed items
   defaultMonthlyBudget: number;
+  defaultFixedBudget: number; // New default for fixed/extra expenses
   themeColor: ThemeColor;
   isDarkMode: boolean;
 }
