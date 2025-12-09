@@ -105,7 +105,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ year, data, fullState, onC
           <h2 className="text-3xl font-bold text-zinc-900 dark:text-white mt-1 tracking-tight">
             ₹{totalFixedSpent.toLocaleString()}
           </h2>
-          <p className="text-muted text-xs mt-2">Grocery, Travel, Bills (Excluded from Daily)</p>
+          <p className="text-muted text-xs mt-2">Rent, SIPs, Travel (Excluded from Daily)</p>
         </Card3D>
 
         {/* Card 3: AI Insights */}
@@ -154,8 +154,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ year, data, fullState, onC
                     labelStyle={{ color: 'rgb(var(--text-muted))', fontSize: '12px', marginBottom: '4px' }}
                     formatter={(value: number, name: string) => [`₹${value.toLocaleString()}`, name]}
                 />
-                <Bar dataKey="totalDailySpent" name="Daily Spend" stackId="a" fill="rgb(var(--primary))" radius={[0, 0, 2, 2]} maxBarSize={20} />
-                <Bar dataKey="totalFixedSpent" name="Fixed (Grocery/Travel)" stackId="a" fill="#f59e0b" radius={[2, 2, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="totalDailySpent" name="Daily Lifestyle" stackId="a" fill="rgb(var(--primary))" radius={[0, 0, 2, 2]} maxBarSize={20} />
+                <Bar dataKey="totalFixedSpent" name="Fixed Obligations" stackId="a" fill="#f59e0b" radius={[2, 2, 0, 0]} maxBarSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -207,31 +207,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ year, data, fullState, onC
         </div>
       </div>
 
-      {/* Yearly Spending Summary */}
+      {/* Yearly Spending Summary - SEPARATED COLUMNS */}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
             <span className="w-1 h-6 bg-primary rounded-full"></span>
             Yearly Overview ({year})
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-border rounded-xl p-4">
-                <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Total Daily Budget</p>
-                <p className="text-xl font-bold text-zinc-900 dark:text-white">₹{totalBudget.toLocaleString()}</p>
-            </div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-border rounded-xl p-4">
-                <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Total Daily Spent</p>
-                <p className="text-xl font-bold text-primary">₹{totalDailySpent.toLocaleString()}</p>
-            </div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-border rounded-xl p-4">
-                <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Total Fixed Spent</p>
-                <p className="text-xl font-bold text-orange-500">₹{totalFixedSpent.toLocaleString()}</p>
-            </div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-border rounded-xl p-4">
-                <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Net Daily Savings</p>
-                <p className={`text-xl font-bold ${totalYearlySavings >= 0 ? 'text-success' : 'text-danger'}`}>
-                    ₹{totalYearlySavings.toLocaleString()}
-                </p>
-            </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             {/* LEFT COLUMN: Lifestyle / Daily */}
+             <div className="bg-zinc-50 dark:bg-zinc-900 border border-border rounded-xl p-5">
+                 <h4 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
+                     <div className="w-2 h-2 rounded-full bg-primary"></div>
+                     Lifestyle / Daily Expenses
+                 </h4>
+                 <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Total Budget</p>
+                        <p className="text-lg font-bold text-zinc-900 dark:text-white">₹{totalBudget.toLocaleString()}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Total Spent</p>
+                        <p className="text-lg font-bold text-zinc-700 dark:text-zinc-300">₹{totalDailySpent.toLocaleString()}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Savings</p>
+                        <p className={`text-lg font-bold ${totalYearlySavings >= 0 ? 'text-success' : 'text-danger'}`}>
+                            {totalYearlySavings >= 0 ? '+' : ''}₹{totalYearlySavings.toLocaleString()}
+                        </p>
+                    </div>
+                 </div>
+             </div>
+
+             {/* RIGHT COLUMN: Fixed / Bills */}
+             <div className="bg-zinc-50 dark:bg-zinc-900 border border-border rounded-xl p-5">
+                 <h4 className="text-sm font-bold text-orange-500 mb-4 flex items-center gap-2">
+                     <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                     Fixed Obligations
+                 </h4>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Total Fixed Spent</p>
+                        <p className="text-lg font-bold text-orange-500">₹{totalFixedSpent.toLocaleString()}</p>
+                        <p className="text-[10px] text-muted mt-1">Rent, Bills, Travel</p>
+                    </div>
+                    <div className="pl-4 border-l border-border border-dashed">
+                         <p className="text-[10px] text-muted uppercase font-bold tracking-wider mb-1">Grand Total Outflow</p>
+                         <p className="text-lg font-bold text-zinc-900 dark:text-white">₹{totalGrandSpent.toLocaleString()}</p>
+                         <p className="text-[10px] text-muted mt-1">Lifestyle + Fixed</p>
+                    </div>
+                 </div>
+             </div>
         </div>
       </div>
 
@@ -245,10 +271,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ year, data, fullState, onC
                 <thead className="bg-zinc-50 dark:bg-zinc-900 text-muted uppercase text-xs font-semibold">
                     <tr>
                         <th className="px-6 py-3">Month</th>
-                        <th className="px-6 py-3">Budget (Limit)</th>
+                        <th className="px-6 py-3">Daily Budget</th>
                         <th className="px-6 py-3">Daily Spent</th>
-                        <th className="px-6 py-3">Fixed (Extra)</th>
-                        <th className="px-6 py-3">Total Outflow</th>
+                        <th className="px-6 py-3">Fixed Spent</th>
                         <th className="px-6 py-3 text-right">Daily Savings</th>
                     </tr>
                 </thead>
@@ -261,7 +286,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ year, data, fullState, onC
                             <td className="px-6 py-4">₹{summary.budget.toLocaleString()}</td>
                             <td className="px-6 py-4 text-primary font-medium">₹{summary.totalDailySpent.toLocaleString()}</td>
                             <td className="px-6 py-4 text-orange-500">₹{summary.totalFixedSpent.toLocaleString()}</td>
-                            <td className="px-6 py-4 font-bold">₹{summary.totalSpent.toLocaleString()}</td>
                             <td className={`px-6 py-4 text-right font-medium ${summary.remaining >= 0 ? 'text-success' : 'text-danger'}`}>
                                 {summary.remaining >= 0 ? '+' : ''}₹{summary.remaining.toLocaleString()}
                             </td>
