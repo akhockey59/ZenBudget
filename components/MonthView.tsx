@@ -8,10 +8,12 @@ interface MonthViewProps {
   year: number;
   month: number;
   monthlyBudget: number;
+  fixedBudget: number; // New Prop
   data: Record<string, DayCalculation>;
   fixedExpenses: FixedExpenseItem[];
   onUpdateExpense: (date: string, amount: number, note: string) => void;
   onUpdateBudget: (amount: number) => void;
+  onUpdateFixedBudget: (amount: number) => void; // New Handler
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onAddFixedExpense: (monthKey: string, item: Omit<FixedExpenseItem, 'id' | 'date'>) => void;
@@ -19,16 +21,21 @@ interface MonthViewProps {
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({ 
-  year, month, monthlyBudget, data, fixedExpenses, 
-  onUpdateExpense, onUpdateBudget, onPrevMonth, onNextMonth,
+  year, month, monthlyBudget, fixedBudget, data, fixedExpenses, 
+  onUpdateExpense, onUpdateBudget, onUpdateFixedBudget, onPrevMonth, onNextMonth,
   onAddFixedExpense, onDeleteFixedExpense
 }) => {
   const [localBudget, setLocalBudget] = useState(monthlyBudget);
+  const [localFixedBudget, setLocalFixedBudget] = useState(fixedBudget);
 
-  // Sync local state when prop changes (e.g. changing months)
+  // Sync local state when props change
   useEffect(() => {
     setLocalBudget(monthlyBudget);
   }, [monthlyBudget]);
+
+  useEffect(() => {
+    setLocalFixedBudget(fixedBudget);
+  }, [fixedBudget]);
 
   const monthKey = `${year}-${String(month).padStart(2, '0')}`;
 
@@ -45,7 +52,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const totalDailySpent = lastDay ? lastDay.cumulativeSpent : 0;
   const startBalance = days.length > 0 ? days[0].startBalance : 0;
   
-  // Get calculated daily limit from the first day (it's consistent for the month)
+  // Get calculated daily limit
   const dailyLimit = days.length > 0 ? days[0].dailyLimit : 0;
   
   const effectiveBudget = monthlyBudget + startBalance;
@@ -54,6 +61,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
 
   // Fixed Expense Logic
   const totalFixed = fixedExpenses.reduce((acc, item) => acc + item.amount, 0);
+  const fixedRemaining = fixedBudget - totalFixed;
+  const fixedPercentUsed = Math.min((totalFixed / fixedBudget) * 100, 100);
 
   const grandTotalSpent = totalDailySpent + totalFixed;
 
@@ -73,6 +82,12 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const handleBudgetBlur = () => {
     if (localBudget !== monthlyBudget) {
       onUpdateBudget(localBudget);
+    }
+  };
+
+  const handleFixedBudgetBlur = () => {
+    if (localFixedBudget !== fixedBudget) {
+      onUpdateFixedBudget(localFixedBudget);
     }
   };
 
@@ -169,23 +184,65 @@ export const MonthView: React.FC<MonthViewProps> = ({
         </div>
 
         {/* RIGHT: Fixed / Extra Expenses Section */}
-        <div className="lg:w-1/3 bg-zinc-50 dark:bg-zinc-900/50 border border-border border-dashed rounded-2xl p-4 flex flex-col justify-center items-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-10">
+        <div className="lg:w-1/3 bg-zinc-50 dark:bg-zinc-900/50 border border-border border-dashed rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 opacity-10 pointer-events-none">
                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
             </div>
             
-            <span className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-1 rounded-lg mb-2">Extra / Fixed</span>
-            
-            <div className="text-center z-10">
-               <span className="text-xs text-muted uppercase font-bold tracking-wider block mb-1">Fixed Spent</span>
-               <span className="text-3xl font-bold text-zinc-900 dark:text-white">
-                 ₹{totalFixed.toLocaleString()}
-               </span>
-               <span className="text-[10px] text-muted block mt-1">Rent, Grocery, Travel</span>
+            <div className="flex items-center justify-between mb-2 relative z-10">
+               <span className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-1 rounded-lg">Extra / Fixed</span>
+            </div>
+
+            <div className="flex flex-col items-center justify-center flex-1 relative z-10">
+                <div className="grid grid-cols-3 w-full text-center gap-2 items-end">
+                    {/* Fixed Budget Edit */}
+                    <div className="flex flex-col items-center group cursor-pointer">
+                        <span className="text-[9px] text-muted uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                            Limit
+                            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                        </span>
+                        <div className="flex items-center justify-center">
+                            <span className="text-muted text-xs mr-0.5">₹</span>
+                            <input 
+                              type="number"
+                              value={localFixedBudget}
+                              onChange={(e) => setLocalFixedBudget(parseFloat(e.target.value) || 0)}
+                              onBlur={handleFixedBudgetBlur}
+                              className="w-14 bg-transparent text-lg font-bold text-zinc-600 dark:text-zinc-400 focus:outline-none p-0 border-b border-dashed border-transparent hover:border-zinc-300 focus:border-orange-500 text-center no-spinner transition-all"
+                            />
+                        </div>
+                    </div>
+                    
+                    {/* Fixed Spent */}
+                    <div>
+                        <span className="text-[9px] text-muted uppercase font-bold tracking-wider mb-1 block">Spent</span>
+                        <span className="text-xl font-bold text-zinc-900 dark:text-white block">
+                            ₹{totalFixed.toLocaleString()}
+                        </span>
+                    </div>
+
+                    {/* Fixed Remaining */}
+                    <div>
+                         <span className="text-[9px] text-muted uppercase font-bold tracking-wider mb-1 block">Left</span>
+                         <span className={`text-lg font-bold ${fixedRemaining < 0 ? 'text-danger' : 'text-zinc-500'}`}>
+                            {fixedRemaining < 0 ? '-' : ''}₹{Math.abs(fixedRemaining).toLocaleString()}
+                         </span>
+                    </div>
+                </div>
             </div>
             
-             <div className="mt-4 pt-4 border-t border-border w-full flex justify-between items-center text-xs text-muted z-10">
-                 <span>Combined Outflow:</span>
+             {/* Fixed Progress Bar */}
+             <div className="mt-4 relative h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden w-full z-10">
+                <motion.div 
+                    className={`absolute top-0 left-0 h-full ${fixedRemaining < 0 ? 'bg-danger' : 'bg-orange-500'}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${fixedPercentUsed}%` }}
+                    transition={{ duration: 0.8 }}
+                />
+             </div>
+            
+             <div className="mt-3 pt-3 border-t border-border w-full flex justify-between items-center text-xs text-muted z-10">
+                 <span>Grand Total Outflow:</span>
                  <span className="font-semibold text-zinc-900 dark:text-zinc-200">₹{grandTotalSpent.toLocaleString()}</span>
              </div>
         </div>
