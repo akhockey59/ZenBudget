@@ -45,6 +45,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const totalDailySpent = lastDay ? lastDay.cumulativeSpent : 0;
   const startBalance = days.length > 0 ? days[0].startBalance : 0;
   
+  // Get calculated daily limit from the first day (it's consistent for the month)
+  const dailyLimit = days.length > 0 ? days[0].dailyLimit : 0;
+  
   const effectiveBudget = monthlyBudget + startBalance;
   const dailyRemaining = effectiveBudget - totalDailySpent;
   const dailyPercentUsed = Math.min((totalDailySpent / effectiveBudget) * 100, 100);
@@ -86,17 +89,30 @@ export const MonthView: React.FC<MonthViewProps> = ({
                 <span className="text-sm font-semibold text-zinc-900 dark:text-white whitespace-nowrap min-w-[100px] text-center">{monthName} {year}</span>
                 <button onClick={onNextMonth} className="hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
              </div>
-             <span className="text-xs font-medium text-primary px-2 py-1 bg-primary/10 rounded-lg">Daily Budget</span>
+             
+             <div className="flex items-center gap-2 group relative">
+               <span className="text-[10px] font-medium text-muted bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg border border-border cursor-help">
+                 Target: ₹{Math.floor(dailyLimit).toLocaleString()}/day
+               </span>
+               <div className="absolute top-full mt-2 right-0 w-48 p-2 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Calculated as: Monthly Limit ÷ Days in Month. <br/>
+                  (Ignores rollover debt/savings)
+               </div>
+               <span className="text-xs font-medium text-primary px-2 py-1 bg-primary/10 rounded-lg">Daily Cycle</span>
+             </div>
           </div>
 
           <div className="flex flex-wrap gap-4 items-center justify-around">
-              {/* Carry Over */}
+              {/* Daily Rollover */}
               {startBalance !== 0 && (
-                <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider">Carry Over</span>
+                <div className="flex flex-col items-center relative group">
+                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider cursor-help border-b border-dashed border-border">Daily Rollover</span>
                     <span className={`text-sm font-bold ${startBalance < 0 ? 'text-danger' : 'text-success'}`}>
                       {startBalance > 0 ? '+' : ''}₹{startBalance.toLocaleString()}
                     </span>
+                    <div className="absolute bottom-full mb-2 w-40 p-2 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+                        Unspent daily allowance from previous months.
+                    </div>
                 </div>
               )}
 
@@ -165,7 +181,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                <span className="text-3xl font-bold text-zinc-900 dark:text-white">
                  ₹{totalFixed.toLocaleString()}
                </span>
-               <span className="text-[10px] text-muted block mt-1">Grocery, Travel, etc.</span>
+               <span className="text-[10px] text-muted block mt-1">Rent, Grocery, Travel</span>
             </div>
             
              <div className="mt-4 pt-4 border-t border-border w-full flex justify-between items-center text-xs text-muted z-10">
@@ -218,7 +234,13 @@ export const MonthView: React.FC<MonthViewProps> = ({
                             onBlur={(e) => handleBlur(day, e)}
                             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                             className={`w-24 bg-zinc-100 dark:bg-zinc-900 border border-border rounded-lg pl-6 pr-3 py-1.5 text-right focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-mono text-sm placeholder-muted
-                                ${day.spent > 100 ? 'text-danger font-semibold' : day.spent > 0 ? 'text-success font-semibold' : 'text-zinc-900 dark:text-zinc-200'}
+                                ${
+                                  day.spent > day.dailyLimit && day.spent > 0 
+                                  ? 'text-danger font-semibold' 
+                                  : day.spent > 0 
+                                    ? 'text-success font-semibold' 
+                                    : 'text-zinc-900 dark:text-zinc-200'
+                                }
                             `}
                         />
                      </div>
