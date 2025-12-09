@@ -9,8 +9,10 @@ export const INITIAL_STATE: AppState = {
   expenses: {},
   notes: {},
   customBudgets: {},
+  customFixedBudgets: {},
   monthlyFixedExpenses: {},
   defaultMonthlyBudget: 3100,
+  defaultFixedBudget: 10000, // Default for Rent/Grocery etc
   themeColor: 'violet',
   isDarkMode: true,
 };
