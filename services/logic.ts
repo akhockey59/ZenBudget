@@ -20,14 +20,19 @@ export const calculateYearData = (
 
   for (let month = 1; month <= 12; month++) {
     const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    // Respect custom monthly budget if set, otherwise default
     const monthlyBudget = data.customBudgets[monthKey] ?? data.defaultMonthlyBudget;
     const daysInMonth = getDaysInMonth(year, month);
     
     // Start Balance for this month includes leftovers from prev month
-    // If it's Jan, we usually reset, but user requested carrying (or we can decide Jan starts fresh).
-    // Let's assume Jan starts fresh for simplicity in Yearly view, OR carry from Dec of prev year if we had that data.
-    // For this scope, let's carry forward strictly within the selected year.
+    // If it's Jan, start fresh (0), or logic could be extended to carry from previous year
     let startBalance = (month === 1) ? 0 : previousMonthBalance;
+
+    // Calculate Dynamic Daily Limit
+    // Updated Logic: The daily target (for color coding) is strictly the Monthly Budget / Days.
+    // Carry-over affects the 'Remaining Balance' but not the 'Daily Target Pace'.
+    const totalAvailable = monthlyBudget + startBalance;
+    const dailyLimit = monthlyBudget / daysInMonth;
 
     let cumulativeSpent = 0;
 
@@ -39,7 +44,7 @@ export const calculateYearData = (
       cumulativeSpent += spent;
       
       // Remaining for this month = (Budget + StartBalance) - SpentSoFar
-      const remainingBalance = (monthlyBudget + startBalance) - cumulativeSpent;
+      const remainingBalance = totalAvailable - cumulativeSpent;
 
       result[dateKey] = {
         date: dateKey,
@@ -48,12 +53,13 @@ export const calculateYearData = (
         cumulativeSpent,
         remainingBalance,
         note,
-        startBalance: (day === 1) ? startBalance : 0 // Only relevant on day 1 for display
+        startBalance: (day === 1) ? startBalance : 0, // Only relevant on day 1 for display
+        dailyLimit: dailyLimit
       };
     }
     
     // The final remaining balance of this month becomes the start balance for next month
-    previousMonthBalance = (monthlyBudget + startBalance) - cumulativeSpent;
+    previousMonthBalance = totalAvailable - cumulativeSpent;
   }
 
   return result;
