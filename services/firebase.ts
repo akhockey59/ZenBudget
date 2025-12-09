@@ -4,14 +4,15 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAL-Bux7MrGHi40a30Lb2bdqYbxphwP0dc",
-  authDomain: "expense-dd1f9.firebaseapp.com",
-  projectId: "expense-dd1f9",
-  storageBucket: "expense-dd1f9.firebasestorage.app",
-  messagingSenderId: "925781362108",
-  appId: "1:925781362108:web:baf3f2b33c79c37d6917b9",
-  measurementId: "G-2WYWY6248M"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
+
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
